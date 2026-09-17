@@ -1,0 +1,141 @@
+{
+  "GET /api/recommendations?manager_id=...": [
+    {
+      "employee_id": "6a46123b0039b00ca7cede44495b8aef",
+      "employee_name": "Arun Das",
+      "period_start": "2026-08-03",
+      "period_end": "2026-08-09",
+      "recommendation": "APPROVE",
+      "reason": "APPROVE: All checks passed.",
+      "next_best_actions": [
+        "Approve the timesheet."
+      ],
+      "checklist": {
+        "expected_hours": 40.0,
+        "logged_hours": 40.0,
+        "pto_hours": 0.0,
+        "variance": 0.0,
+        "unexplained_hours": 0.0,
+        "rejected_count": 0,
+        "open_count": 0,
+        "submitted_count": 0,
+        "closed_count": 1,
+        "weekend_hours": 0.0,
+        "duplicate_count": 0,
+        "non_standard_util_pct": 0.0
+      },
+      "computed_at": "2026-08-27T09:00:00Z",
+      "manager_decision": null,
+      "decided_at": null,
+      "decided_by": null
+    },
+    {
+      "employee_id": "6a60cea80051b540883c5c1bcd8afc4d",
+      "employee_name": "Pradeep Raj P",
+      "period_start": "2026-08-10",
+      "period_end": "2026-08-16",
+      "recommendation": "REVIEW",
+      "reason": "REVIEW: 8 unexplained hours (no PTO/holiday covers the gap).",
+      "next_best_actions": [
+        "Ask the employee for a brief note explaining the flagged item(s).",
+        "Review before approving; return for correction if the explanation doesn't hold up."
+      ],
+      "checklist": {
+        "expected_hours": 40.0,
+        "logged_hours": 32.0,
+        "pto_hours": 0.0,
+        "variance": -8.0,
+        "unexplained_hours": 8.0,
+        "rejected_count": 0,
+        "open_count": 0,
+        "submitted_count": 1,
+        "closed_count": 0,
+        "weekend_hours": 0.0,
+        "duplicate_count": 0,
+        "non_standard_util_pct": 0.0
+      },
+      "computed_at": "2026-08-27T09:00:00Z",
+      "manager_decision": null,
+      "decided_at": null,
+      "decided_by": null
+    },
+    {
+      "employee_id": "6a1234560000abcdef",
+      "employee_name": "Robin T",
+      "period_start": "2026-08-10",
+      "period_end": "2026-08-16",
+      "recommendation": "FLAGGED",
+      "reason": "FLAGGED: 1 rejected entry in this period.",
+      "next_best_actions": [
+        "Return the timesheet for correction.",
+        "Ask the employee to resolve the flagged entries and resubmit."
+      ],
+      "checklist": {
+        "expected_hours": 40.0,
+        "logged_hours": 42.0,
+        "pto_hours": 0.0,
+        "variance": 2.0,
+        "unexplained_hours": 0,
+        "rejected_count": 1,
+        "open_count": 0,
+        "submitted_count": 1,
+        "closed_count": 0,
+        "weekend_hours": 0.0,
+        "duplicate_count": 0,
+        "non_standard_util_pct": 0.0
+      },
+      "computed_at": "2026-08-27T09:00:00Z",
+      "manager_decision": null,
+      "decided_at": null,
+      "decided_by": null
+    }
+  ],
+  "GET /api/recommendations/stats?manager_id=...": {
+    "manager_id": "6a689fc90018dbdf786139f8c23e2db7",
+    "counts": {
+      "APPROVE": 4,
+      "REVIEW": 2,
+      "FLAGGED": 1,
+      "NOT_READY": 3
+    },
+    "actionable_total": 7,
+    "not_ready_total": 3
+  },
+  "GET /api/recommendations/{employee_id}/{period_start}": {
+    "employee_id": "6a60cea80051b540883c5c1bcd8afc4d",
+    "employee_name": "Pradeep Raj P",
+    "period_start": "2026-08-10",
+    "period_end": "2026-08-16",
+    "recommendation": "REVIEW",
+    "reason": "REVIEW: 8 unexplained hours (no PTO/holiday covers the gap).",
+    "next_best_actions": [
+      "Ask the employee for a brief note explaining the flagged item(s).",
+      "Review before approving; return for correction if the explanation doesn't hold up."
+    ],
+    "checklist": {
+      "expected_hours": 40.0,
+      "logged_hours": 32.0,
+      "pto_hours": 0.0,
+      "variance": -8.0,
+      "unexplained_hours": 8.0,
+      "rejected_count": 0,
+      "open_count": 0,
+      "submitted_count": 1,
+      "closed_count": 0,
+      "weekend_hours": 0.0,
+      "duplicate_count": 0,
+      "non_standard_util_pct": 0.0
+    },
+    "computed_at": "2026-08-27T09:00:00Z",
+    "manager_decision": null,
+    "decided_at": null,
+    "decided_by": null
+  },
+  "POST /api/recommendations/{employee_id}/{period_start}/decision": {
+    "employee_id": "6a46123b0039b00ca7cede44495b8aef",
+    "period_start": "2026-08-03",
+    "decision": "approve",
+    "decided_at": "2026-08-27T10:15:00Z",
+    "workfront_write_back": true
+  }
+}
