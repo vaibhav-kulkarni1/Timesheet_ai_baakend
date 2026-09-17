@@ -59,7 +59,11 @@ services:
   - type: cron
     name: sync-workfront
     runtime: python
-    plan: free           # cron jobs run on schedule regardless of plan; free is fine here
+    plan: starter        # Render doesn't offer a free plan for cron jobs — only
+                         # the web service can be free. Cron jobs bill per actual
+                         # run time (seconds), so real cost here is a small
+                         # fraction of a full "starter" web service — typically
+                         # well under $1-2/mo for this schedule.
     schedule: "*/30 * * * *"
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python -m scripts.sync_workfront"
@@ -89,7 +93,8 @@ services:
   - type: cron
     name: sync-hours
     runtime: python
-    plan: free           # cron jobs run on schedule regardless of plan; free is fine here
+    plan: starter        # same note as sync-workfront above — cron jobs bill
+                         # per run-second, not the full flat monthly rate
     schedule: "0 */2 * * *"
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python -m scripts.sync_hours"
