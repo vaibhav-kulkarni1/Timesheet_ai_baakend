@@ -1,11 +1,17 @@
 # Render deployment blueprint. Render reads this file automatically when you
-# connect the repo via "New > Blueprint" in the Render dashboard — it creates
-# every service below in one step.
+# connect the repo via "New > Blueprint" in the Render dashboard.
 #
 # What this defines:
 #   1. A Postgres database (survives restarts — SQLite can't, on a cloud host)
 #   2. The web service (your FastAPI app + dashboard)
-#   3. Two cron jobs (the syncs you currently run by hand)
+#
+# The two sync scripts (sync_workfront.py, sync_hours.py) do NOT run as Render
+# cron jobs — Render doesn't offer a free plan for cron jobs, only for web
+# services and databases. Instead they run as free GitHub Actions scheduled
+# workflows: see .github/workflows/sync-workfront.yml and sync-hours.yml.
+# Those need the same DATABASE_URL (this database's EXTERNAL connection
+# string — see DEPLOYMENT.md) plus your Workfront/OpenAI credentials, set as
+# GitHub repo secrets (Settings > Secrets and variables > Actions), not here.
 #
 # Secrets (API keys, tokens) are NOT in this file — Render prompts you for
 # them in the dashboard when you deploy, and stores them encrypted. See
@@ -19,7 +25,7 @@ databases:
     user: timesheet_ai
 
 services:
-  # --- the web app (API + dashboard) ---
+  # --- the web app (API + dashboard) — the only Render compute service ---
   - type: web
     name: timesheet-ai-backend
     runtime: python
@@ -37,7 +43,7 @@ services:
       - key: WORKFRONT_BASE_URL
         sync: false       # set manually in the Render dashboard (not sensitive but instance-specific)
       - key: WORKFRONT_CLIENT_ID
-        sync: false       # SECRET — set manually in the dashboard (preferred: auto-refreshing auth)
+        sync: false       # SECRET — set manually in the dashboard (auto-refreshing auth)
       - key: WORKFRONT_CLIENT_SECRET
         sync: false       # SECRET — set manually in the dashboard
       - key: MOCK_LLM
@@ -54,60 +60,3 @@ services:
         value: "30"
       - key: LOG_LEVEL
         value: INFO
-
-  # --- scheduled sync: timesheets (every 30 min) ---
-  - type: cron
-    name: sync-workfront
-    runtime: python
-    plan: starter        # Render doesn't offer a free plan for cron jobs — only
-                         # the web service can be free. Cron jobs bill per actual
-                         # run time (seconds), so real cost here is a small
-                         # fraction of a full "starter" web service — typically
-                         # well under $1-2/mo for this schedule.
-    schedule: "*/30 * * * *"
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python -m scripts.sync_workfront"
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: timesheet-ai-db
-          property: connectionString
-      - key: WORKFRONT_MODE
-        value: real
-      - key: WORKFRONT_BASE_URL
-        sync: false
-      - key: WORKFRONT_CLIENT_ID
-        sync: false
-      - key: WORKFRONT_CLIENT_SECRET
-        sync: false
-      - key: MOCK_LLM
-        value: "false"
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: OPENAI_MODEL
-        value: gpt-4.1
-      - key: SYNC_ONLY_WITH_HOURS
-        value: "0"
-
-  # --- scheduled sync: hour entries (every 2 hours — lower volume) ---
-  - type: cron
-    name: sync-hours
-    runtime: python
-    plan: starter        # same note as sync-workfront above — cron jobs bill
-                         # per run-second, not the full flat monthly rate
-    schedule: "0 */2 * * *"
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python -m scripts.sync_hours"
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: timesheet-ai-db
-          property: connectionString
-      - key: WORKFRONT_MODE
-        value: real
-      - key: WORKFRONT_BASE_URL
-        sync: false
-      - key: WORKFRONT_CLIENT_ID
-        sync: false
-      - key: WORKFRONT_CLIENT_SECRET
-        sync: false
