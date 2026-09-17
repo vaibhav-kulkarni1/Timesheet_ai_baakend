@@ -23,7 +23,8 @@ services:
   - type: web
     name: timesheet-ai-backend
     runtime: python
-    plan: starter        # free tier sleeps after 15 min idle; starter (~$7/mo) stays on
+    plan: free           # sleeps after 15 min idle; first request after that takes ~30-60s to wake.
+                         # Upgrade to 'starter' (~$7/mo) later for always-on, no code change needed.
     buildCommand: "pip install -r requirements.txt"
     startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     envVars:
@@ -58,7 +59,7 @@ services:
   - type: cron
     name: sync-workfront
     runtime: python
-    plan: starter
+    plan: free           # cron jobs run on schedule regardless of plan; free is fine here
     schedule: "*/30 * * * *"
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python -m scripts.sync_workfront"
@@ -88,7 +89,7 @@ services:
   - type: cron
     name: sync-hours
     runtime: python
-    plan: starter
+    plan: free           # cron jobs run on schedule regardless of plan; free is fine here
     schedule: "0 */2 * * *"
     buildCommand: "pip install -r requirements.txt"
     startCommand: "python -m scripts.sync_hours"
