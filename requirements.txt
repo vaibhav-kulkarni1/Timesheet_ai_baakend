@@ -3,6 +3,7 @@ uvicorn[standard]>=0.30
 pydantic>=2.7,<3.0
 pydantic-settings>=2.3
 SQLAlchemy>=2.0,<3.0
+psycopg[binary]>=3.1        # Postgres driver — required in production (Render/cloud)
 httpx>=0.27
 openai>=1.30
 python-dotenv>=1.0

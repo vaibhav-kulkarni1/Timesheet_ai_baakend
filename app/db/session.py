@@ -13,9 +13,23 @@ from app.models.db_models import Base
 
 settings = get_settings()
 
-_connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
 
-engine = create_engine(settings.database_url, connect_args=_connect_args)
+def _normalize_db_url(url: str) -> str:
+    """Cloud providers (Render, Heroku, etc.) commonly hand out
+    'postgres://...' connection strings, but SQLAlchemy + the psycopg3
+    driver need the explicit 'postgresql+psycopg://' scheme. Rewriting here
+    means the .env / dashboard-provided URL can be pasted as-is."""
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+    if url.startswith("postgresql://") and "+psycopg" not in url:
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    return url
+
+
+_db_url = _normalize_db_url(settings.database_url)
+_connect_args = {"check_same_thread": False} if _db_url.startswith("sqlite") else {}
+
+engine = create_engine(_db_url, connect_args=_connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
