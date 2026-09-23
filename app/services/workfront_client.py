@@ -204,7 +204,14 @@ class RealWorkfrontClient(WorkfrontClient):
             return "holiday" if "holiday" in low else "PTO"
         return "project"
 
-    def _search(self, user_id: str | None, period_start: date | None, want_hours: bool, limit: int) -> list[dict]:
+    def _search(
+        self,
+        user_id: str | None,
+        period_start: date | None,
+        want_hours: bool,
+        limit: int,
+        status: str | None = None,
+    ) -> list[dict]:
         import httpx
 
         fields = list(_HEADER_FIELDS)
@@ -217,6 +224,8 @@ class RealWorkfrontClient(WorkfrontClient):
                 params["userID"] = user_id
             if period_start:
                 params["startDate"] = period_start.isoformat()
+            if status:
+                params["status"] = status
             resp = self._client.get("/tshet/search", params=params)
             resp.raise_for_status()
             return resp.json().get("data", [])
@@ -334,11 +343,19 @@ class RealWorkfrontClient(WorkfrontClient):
             return False
 
     def list_timesheets(self, user_id: str | None = None, limit: int = 200) -> list[dict]:
+        # Only pull Submitted (status=S) timesheets by default — these are
+        # the ones that actually need a manager decision. Open (not yet
+        # submitted) and Closed/Rejected timesheets are skipped, which is
+        # what removes the noisy NOT_READY backlog from the sync.
+        # Configurable via WORKFRONT_TIMESHEET_STATUS in .env; leave it
+        # unset/blank there to go back to pulling every status.
+        status = get_settings().workfront_timesheet_status
+
         # Try with nested hours first; if that errors, fall back to header-only.
         try:
-            return self._search(user_id, None, want_hours=True, limit=limit)
+            return self._search(user_id, None, want_hours=True, limit=limit, status=status)
         except Exception:
-            return self._search(user_id, None, want_hours=False, limit=limit)
+            return self._search(user_id, None, want_hours=False, limit=limit, status=status)
 
     def fetch_hours(self, owner_id: str, limit: int = 2000) -> list:
         """Pull all HOUR entries for one user via /hour/search, normalized

@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     workfront_token_scope: str = "openid,AdobeID,read_organizations,additional_info.projectedProductContext"
     workfront_api_key: str = ""  # fallback static token (legacy / manual mode)
 
+    # Timesheet-header status filter applied to /tshet/search during sync.
+    # "S" = Submitted only (skips Open/Closed/Rejected noise — this is what
+    # removes NOT_READY timesheets from the Approval Queue sync). Set to ""
+    # in .env to go back to pulling every status.
+    workfront_timesheet_status: str = "S"
+
     # LLM
     mock_llm: bool = True
     openai_api_key: str = ""
