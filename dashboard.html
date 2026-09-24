@@ -219,33 +219,6 @@
 
 </div>
 
-
-<script>
-window.__MOCK__ = {
-  "/api/recommendations/stats": {counts:{APPROVE:8,REVIEW:14,FLAGGED:2,NOT_READY:120}},
-  "/api/recommendations": [
-    {employee_name:"Pradeep Raj P",period_start:"2026-08-17",period_end:"2026-08-23",recommendation:"APPROVE",
-     reason:"All requirements met.",next_best_actions:["Approve the timesheet."],
-     comments_summary:"Mon: Vation timesheet project | Tue: Vation timesheet project | Wed: Vation timesheet project | Thu: Vation timesheet project | Fri: Vation timesheet project"},
-    {employee_name:"Anoop Johnson",period_start:"2026-08-03",period_end:"2026-08-09",recommendation:"REVIEW",
-     reason:"Logged 45.0h vs expected 40.0h — 5h overtime, not pre-approved.",next_best_actions:["Ask for a note.","Review before approving."],
-     comments_summary:"Mon: Client escalation call ran long | Tue: Finished sprint deliverables | Wed: Deployment support"},
-    {employee_name:"Krishna Kanathey",period_start:"2026-08-17",period_end:"2026-08-23",recommendation:"FLAGGED",
-     reason:"1 rejected entry in this period.",next_best_actions:["Return for correction."], comments_summary:""}
-  ],
-  "/api/anomalies": {counts:{HIGH:6,MEDIUM:19,LOW:15,total:40}, anomalies:[
-    {employee_name:"Anoop Johnson",period_start:"2026-08-03",severity:"HIGH",title:"Excessive Hours",description:"Anoop Johnson logged 45 hours (target 40h) — 5h of overtime without prior approval."}
-  ]},
-  "/api/employee-health": {counts:{HIGH:0,MEDIUM:2,LOW:0,total:2}, employees:[
-    {employee_name:"Anoop Johnson",risk:"MEDIUM",reason:"9h of overtime across 2 periods and no PTO in the last 60 days.",metrics:{overtime_hours_window:9,overtime_periods:2,no_recent_leave:true}}
-  ]},
-  "/api/utilization": {total_hours:428.5, window_days:null,
-    by_project:[{name:"Content Supply Chain Demo",hours:182.0,pct:42.5},{name:"CRM Revamp",hours:150.0,pct:35.0},{name:"Internal / Admin",hours:96.5,pct:22.5}],
-    by_role:[{name:"Consultant",hours:265.0,pct:61.8},{name:"Architect",hours:110.5,pct:25.8},{name:"QA Engineer",hours:53.0,pct:12.4}]},
-  "/api/productivity": {window_days:null, planned_hours:320.0, actual_hours:312.0, logged_hours:312.0, variance_hours:-8.0, efficiency_pct:102.6, tasks_total:34, deliverables_completed:28}
-};
-window.fetch = async (url) => { const p = url.split("?")[0]; return { ok:true, status:200, json: async()=>window.__MOCK__[p] }; };
-</script>
 <script>
 // Served by the backend at /dashboard, so same-origin relative calls work.
 // If you open this file directly (file://) instead, set API = "http://localhost:8000".
@@ -262,7 +235,9 @@ const q = (obj) => {
 };
 
 async function getJSON(path) {
-  const r = await fetch(API + path);
+  // cache: "no-store" so a browser (or intermediate cache) never serves a
+  // stale JSON response for these live API calls.
+  const r = await fetch(API + path, { cache: "no-store" });
   if (!r.ok) throw new Error(`${path} → ${r.status}`);
   return r.json();
 }
