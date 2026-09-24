@@ -6,6 +6,18 @@ overtimeHours, totalHours, hasNotes, approverID) — enough for the full rules
 engine. This script converts each header directly (no extra per-row API call)
 and runs rules -> narrative -> store.
 
+Delete-and-replace: since the Workfront query is now filtered (status=S by
+default — see WORKFRONT_TIMESHEET_STATUS in .env), a timesheet that no
+longer matches the filter (e.g. it was Open and never got Submitted) would
+otherwise be left behind forever in the DB from an earlier sync. To avoid
+that:
+  - A FULL sync (no user_id argument) wipes timesheet_recommendations and
+    timesheet_entries_staging entirely before reloading, so the DB always
+    matches exactly what the current API call returns.
+  - A SINGLE-USER sync (`python -m scripts.sync_workfront <userID>`) only
+    wipes that one employee's rows, so a spot-check never touches anyone
+    else's data.
+
 Usage:
     python -m scripts.sync_workfront                 # all timesheets (up to SYNC_LIMIT)
     python -m scripts.sync_workfront <workfront_userID>   # just one user
@@ -47,6 +59,30 @@ def main() -> None:
     db = SessionLocal()
     processed = skipped = failed = 0
     try:
+        # --- Delete-and-replace -------------------------------------------
+        # Whatever the API returns THIS run is the full truth for this scope.
+        # Anything left over from a previous run that no longer qualifies
+        # (e.g. dropped out because of the status filter) gets removed here
+        # rather than lingering forever.
+        if user_id:
+            # We only know the Workfront userID here, not yet the internal
+            # employee_id used as the DB primary key — but they're the same
+            # value in this codebase (see _header_to_entries: employee_id =
+            # header["userID"]), so this scopes correctly to one employee.
+            wiped_rec = db.query(TimesheetRecommendation).filter(
+                TimesheetRecommendation.employee_id == user_id
+            ).delete(synchronize_session=False)
+            wiped_stage = db.query(TimesheetEntryStaging).filter(
+                TimesheetEntryStaging.employee_id == user_id
+            ).delete(synchronize_session=False)
+        else:
+            wiped_rec = db.query(TimesheetRecommendation).delete(synchronize_session=False)
+            wiped_stage = db.query(TimesheetEntryStaging).delete(synchronize_session=False)
+        db.commit()
+        if wiped_rec or wiped_stage:
+            print(f"Cleared {wiped_rec} stale recommendation row(s) and "
+                  f"{wiped_stage} stale staging row(s) before reloading.\n")
+
         for h in headers:
             total_hours = float(h.get("totalHours") or 0)
             if only_with_hours and total_hours == 0:
@@ -72,7 +108,9 @@ def main() -> None:
                 period_start = entries[0].period_start
                 manager_id = h.get("approverID")
 
-                # Stage the raw entries (replace-on-refresh).
+                # Stage the raw entries for this (employee, period). The
+                # table was already wiped above, but this guards against two
+                # headers in the same run resolving to the same key.
                 db.query(TimesheetEntryStaging).filter(
                     TimesheetEntryStaging.employee_id == employee_id,
                     TimesheetEntryStaging.period_start == period_start,

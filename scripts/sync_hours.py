@@ -6,6 +6,13 @@ For each user found in the timesheet recommendations (so we reuse the users
 we already know about), pulls all their hour entries via /hour/search and
 stores them in hour_entries_staging.
 
+Delete-and-replace: the active user list comes from timesheet_recommendations,
+which sync_workfront.py now keeps in sync with the (filtered) Workfront
+query. Any owner whose hour data is still sitting in hour_entries_staging
+but who no longer appears in that active list (e.g. their timesheet stopped
+matching the status filter) is cleaned up here too, so Utilization /
+Productivity don't keep showing stale employees.
+
 Usage:
     python -m scripts.sync_hours                 # all known users
     python -m scripts.sync_hours <workfront_userID>   # one user
@@ -42,6 +49,19 @@ def main() -> None:
         if not user_ids:
             print("No users found. Run 'python -m scripts.sync_workfront' first.")
             return
+
+        # --- Delete-and-replace ---------------------------------------
+        # Only run the broad cleanup during a full sync (no single-user
+        # argument) — otherwise a one-user spot-check would wipe out every
+        # other employee's hour data.
+        if not one_user:
+            wiped = db.query(HourEntryStaging).filter(
+                ~HourEntryStaging.owner_id.in_(user_ids)
+            ).delete(synchronize_session=False)
+            db.commit()
+            if wiped:
+                print(f"Cleared {wiped} stale hour entrie(s) for employees no "
+                      f"longer in the active (Submitted) set.\n")
 
         print(f"Pulling hours for {len(user_ids)} user(s)...\n")
         total_entries = 0
